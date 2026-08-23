@@ -1,0 +1,76 @@
+﻿# ============================================================
+# SUPPLY_AND_DEMAND_ROBOT — GITIGNORE
+# ============================================================
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets / credentials
+.env
+.env.*
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+
+# Logs
+*.log
+logs/
+
+# Temporary diagnostic / repair scripts
+_*.py
+_*_test.py
+_*_probe.py
+_*_audit.py
+_*_diagnostic.py
+_*_contract.py
+_*_calibration.py
+_*_retest.py
+_*_corrected.py
+_*_integration.py
+_*_bridge.py
+_*_fix.py
+_*_repair.py
+_*_verify.py
+
+# Backup directories
+_backtest_repair_backup/
+
+# Source-code backups
+*.bak
+*.bak_*
+*.before_*
+*.pre_*
+
+# Runtime-generated state/reports
+runtime/reports/
+runtime/state/
+runtime/next_signal.json
+
+# Generated backtest output
+backtest/results/
+backtest/output/
+reports/generated/
+
+# Generated data
+*.csv
+*.sqlite
+*.db
+
+# IDE / OS
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
