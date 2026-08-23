@@ -36,7 +36,15 @@ class ZoneDetector:
                 if body < atr * self.departure_multiplier:
                     continue
                 direction = ZoneType.DEMAND if departure["close"] > departure["open"] else ZoneType.SUPPLY
-                zone = self._make_zone(base, rows[departure_index + 1:], symbol, timeframe, direction, body / atr)
+                zone = self._make_zone(
+                    base,
+                    departure,
+                    rows[departure_index + 1:],
+                    symbol,
+                    timeframe,
+                    direction,
+                    body / atr,
+                )
                 if zone:
                     zones.append(zone)
                 break
@@ -66,8 +74,16 @@ class ZoneDetector:
         width = max(r["high"] for r in base) - min(r["low"] for r in base)
         return width > 0 and width <= atr * max(1.2, len(base) * 0.9)
 
-    def _make_zone(self, base: list[dict[str, Any]], subsequent: list[dict[str, Any]], symbol: str,
-                   timeframe: str, zone_type: ZoneType, strength: float) -> Zone | None:
+    def _make_zone(
+        self,
+        base: list[dict[str, Any]],
+        departure: dict[str, Any],
+        subsequent: list[dict[str, Any]],
+        symbol: str,
+        timeframe: str,
+        zone_type: ZoneType,
+        strength: float,
+    ) -> Zone | None:
         upper, lower = max(r["high"] for r in base), min(r["low"] for r in base)
         tests = 0
         invalidated = False
@@ -87,20 +103,31 @@ class ZoneDetector:
         else:
             status = MitigationStatus.MITIGATED
         origin = base[0]["time"]
-        departure = subsequent[0]["time"] if subsequent else base[-1]["time"]
+        departure_time = departure["time"]
         digest = hashlib.sha1(f"{symbol}|{timeframe}|{zone_type.value}|{origin.isoformat()}|{upper:.8f}|{lower:.8f}".encode()).hexdigest()[:12]
-        return Zone(zone_id=f"{timeframe}_{zone_type.value}_{digest}", symbol=symbol, timeframe=timeframe,
-                    zone_type=zone_type, upper_price=upper, lower_price=lower, created_at=datetime.now(timezone.utc),
-                    origin_time=origin, freshness=max(0, 100 - tests * 30), test_count=tests,
-                    mitigation_status=status, invalidation_status=invalidated, strength=min(100, strength * 20),
-                    source_timeframe=timeframe,
-                    metadata={
-                        "base_candles": len(base),
-                        "departure_atr": round(strength, 3),
-                        "base_start_time": origin,
-                        "departure_end_time": departure,
-                        "departure_candles": 1,
-                    })
+        return Zone(
+            zone_id=f"{timeframe}_{zone_type.value}_{digest}",
+            symbol=symbol,
+            timeframe=timeframe,
+            zone_type=zone_type,
+            upper_price=upper,
+            lower_price=lower,
+            created_at=datetime.now(timezone.utc),
+            origin_time=origin,
+            freshness=max(0, 100 - tests * 30),
+            test_count=tests,
+            mitigation_status=status,
+            invalidation_status=invalidated,
+            strength=min(100, strength * 20),
+            source_timeframe=timeframe,
+            metadata={
+                "base_candles": len(base),
+                "departure_atr": round(strength, 3),
+                "base_start_time": origin,
+                "departure_end_time": departure_time,
+                "departure_candles": 1,
+            },
+        )
 
     @staticmethod
     def _deduplicate(zones: list[Zone]) -> list[Zone]:
