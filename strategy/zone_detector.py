@@ -87,12 +87,20 @@ class ZoneDetector:
         else:
             status = MitigationStatus.MITIGATED
         origin = base[0]["time"]
+        departure = subsequent[0]["time"] if subsequent else base[-1]["time"]
         digest = hashlib.sha1(f"{symbol}|{timeframe}|{zone_type.value}|{origin.isoformat()}|{upper:.8f}|{lower:.8f}".encode()).hexdigest()[:12]
         return Zone(zone_id=f"{timeframe}_{zone_type.value}_{digest}", symbol=symbol, timeframe=timeframe,
                     zone_type=zone_type, upper_price=upper, lower_price=lower, created_at=datetime.now(timezone.utc),
                     origin_time=origin, freshness=max(0, 100 - tests * 30), test_count=tests,
                     mitigation_status=status, invalidation_status=invalidated, strength=min(100, strength * 20),
-                    source_timeframe=timeframe, metadata={"base_candles": len(base), "departure_atr": round(strength, 3)})
+                    source_timeframe=timeframe,
+                    metadata={
+                        "base_candles": len(base),
+                        "departure_atr": round(strength, 3),
+                        "base_start_time": origin,
+                        "departure_end_time": departure,
+                        "departure_candles": 1,
+                    })
 
     @staticmethod
     def _deduplicate(zones: list[Zone]) -> list[Zone]:
