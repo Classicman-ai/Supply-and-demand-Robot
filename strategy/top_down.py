@@ -1,7 +1,6 @@
 """Canonical D1 → H4 → H1 → M15 → M5 supply/demand analysis."""
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from models.zones import Zone, ZoneType
@@ -46,15 +45,24 @@ class TopDownEngine:
             by_timeframe[timeframe] = zones
 
             validation_zones = [self._zone_to_validation_dict(zone) for zone in zones]
-            results = self.validator.validate_zones(
-                zones=validation_zones,
-                candles=data[timeframe],
-                current_price=current_price,
-                opposing_zones=[
+            results: list[dict[str, Any]] = []
+            for candidate in validation_zones:
+                opposing = [
                     item for item in validation_zones
                     if str(item["zone_type"]).upper()
-                    != str(item["zone_type"]).upper()
-                ],
+                    != str(candidate["zone_type"]).upper()
+                ]
+                results.append(
+                    self.validator.validate_zone(
+                        zone=candidate,
+                        candles=data[timeframe],
+                        current_price=current_price,
+                        opposing_zones=opposing,
+                    )
+                )
+
+            results.sort(
+                key=lambda item: (-float(item.get("score", 0.0)), item.get("zone_id") or "")
             )
             validation_by_timeframe[timeframe] = results
             for result in results:
