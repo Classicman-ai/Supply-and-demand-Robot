@@ -34,6 +34,10 @@ class TopDownEngine:
             (row[0].get("symbol") for row in data.values() if row and row[0].get("symbol")),
             symbol,
         )
+
+        # The analysis price is always the last M5 close available at the
+        # caller's historical timestamp. HistoricalMarketData enforces that
+        # its data cannot contain candles after that timestamp.
         current_price = float(data["M5"][-1]["close"])
         by_timeframe: dict[str, list[Zone]] = {}
         validation_by_timeframe: dict[str, list[dict[str, Any]]] = {}
@@ -46,12 +50,20 @@ class TopDownEngine:
 
             validation_zones = [self._zone_to_validation_dict(zone) for zone in zones]
             results: list[dict[str, Any]] = []
-            for candidate in validation_zones:
+            for candidate_zone, candidate in zip(zones, validation_zones):
+                # Opposing-zone conflict is a CURRENT active-zone concept.
+                # Do not penalize a candidate because of an opposing zone that
+                # has already been invalidated. The detector has already
+                # evaluated each zone's lifecycle using only candles available
+                # at this historical snapshot.
                 opposing = [
-                    item for item in validation_zones
-                    if str(item["zone_type"]).upper()
+                    item
+                    for other_zone, item in zip(zones, validation_zones)
+                    if other_zone.active
+                    and str(item["zone_type"]).upper()
                     != str(candidate["zone_type"]).upper()
                 ]
+
                 results.append(
                     self.validator.validate_zone(
                         zone=candidate,
@@ -70,6 +82,9 @@ class TopDownEngine:
                 if zone_id:
                     validation_by_id[str(zone_id)] = result
 
+        # Only active zones are allowed to establish the current market
+        # context. This prevents historical invalidated zones from becoming
+        # the nearest structural reference during a backtest snapshot.
         supply = [
             z for zones in by_timeframe.values()
             for z in zones
@@ -163,11 +178,11 @@ class TopDownEngine:
 
     @staticmethod
     def _confirmation(zones: list[Zone], price: float, bias: str) -> dict[str, Any]:
-        relevant = [z for z in zones if z.lower_price <= price <= z.upper_price]
+        relevant = [z for z in zones if z.active and z.lower_price <= price <= z.upper_price]
         return {
             "confirmed": bool(relevant) and bias != "NEUTRAL",
             "zones": relevant,
-            "reason": "price is reacting inside a matching zone" if relevant else "price is not inside an MTF zone",
+            "reason": "price is reacting inside a matching active zone" if relevant else "price is not inside an active MTF zone",
         }
 
     @staticmethod
