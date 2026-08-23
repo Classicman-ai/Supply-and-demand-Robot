@@ -74,3 +74,21 @@ reports/generated/
 *.code-workspace
 .DS_Store
 Thumbs.db
+
+# ============================================================
+# HISTORICAL BACKTEST DATA — XAUUSDm
+# Keep the project's official historical dataset in GitHub.
+# ============================================================
+!backtest/data/
+!backtest/data/XAUUSDm/
+!backtest/data/XAUUSDm/manifest.csv
+!backtest/data/XAUUSDm/*.csv
+
+# ============================================================
+# HISTORICAL BACKTEST DATA — XAUUSDm
+# Keep the project's official historical dataset in GitHub.
+# ============================================================
+!backtest/data/
+!backtest/data/XAUUSDm/
+!backtest/data/XAUUSDm/manifest.csv
+!backtest/data/XAUUSDm/*.csv
